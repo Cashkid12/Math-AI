@@ -14,7 +14,7 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: '../backend/static', // Output to Flask's static directory
+    outDir: 'dist', // Output to dist directory for Vercel
     emptyOutDir: true,
   }
 })

@@ -1,6 +1,7 @@
 /**
  * Equai AI - Main Application Component
  * Full-stack AI-powered math solver with step-by-step explanations
+ * Last deployment: November 20, 2025
  */
 import React, { useState } from 'react';
 import './App.css';

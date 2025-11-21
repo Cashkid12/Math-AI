@@ -4,7 +4,10 @@
  */
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// Use environment-specific base URL
+const API_BASE_URL = import.meta.env.DEV 
+  ? 'http://localhost:5000/api' 
+  : '/api'; // For production, proxy through Vercel
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -38,9 +41,13 @@ export const solveProblem = async (input) => {
 export const getGraphUrl = (filename) => {
   if (!filename) return null;
   if (filename.startsWith('/api/graph/')) {
-    return `http://localhost:5000${filename}`;
+    return import.meta.env.DEV 
+      ? `http://localhost:5000${filename}`
+      : `${filename}`;
   }
-  return `http://localhost:5000/api/graph/${filename}`;
+  return import.meta.env.DEV
+    ? `http://localhost:5000/api/graph/${filename}`
+    : `/api/graph/${filename}`;
 };
 
 /**
@@ -82,7 +89,9 @@ export const getAnalytics = async () => {
  * @returns {string} Graph URL
  */
 export const generateGraph = (expr, xmin = -10, xmax = 10) => {
-  return `http://localhost:5000/api/graph?expr=${encodeURIComponent(expr)}&xmin=${xmin}&xmax=${xmax}`;
+  return import.meta.env.DEV
+    ? `http://localhost:5000/api/graph?expr=${encodeURIComponent(expr)}&xmin=${xmin}&xmax=${xmax}`
+    : `/api/graph?expr=${encodeURIComponent(expr)}&xmin=${xmin}&xmax=${xmax}`;
 };
 
 export default api;

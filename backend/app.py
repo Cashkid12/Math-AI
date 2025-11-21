@@ -239,6 +239,18 @@ def generate_multi_graph():
         logger.error(f"Error generating multi-graph: {e}")
         return jsonify({'error': str(e)}), 500
 
+# Serve React frontend in production
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_frontend(path):
+    """Serve React frontend static files in production"""
+    if path != "" and os.path.exists(f"static/{path}"):
+        return send_file(f"static/{path}")
+    elif path == "" or path.endswith(".html") or "." not in path:
+        return send_file("static/index.html")
+    else:
+        return send_file("static/index.html")
+
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors"""

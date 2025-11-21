@@ -185,11 +185,24 @@ The app is pre-configured with MongoDB Atlas:
 
 ## 🚀 Deployment
 
+### Deploying to Render (Backend) and Vercel (Frontend)
+
+Detailed deployment instructions are available in [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ### Backend
-Deploy to Railway, Render, or Heroku
+Deploy to Render:
+1. Push your code to GitHub
+2. Create a new Web Service on Render
+3. Connect your repository
+4. Set environment variables
+5. Deploy!
 
 ### Frontend
-Deploy to Vercel or Netlify
+Deploy to Vercel:
+1. Push your code to GitHub
+2. Import your project to Vercel
+3. Configure build settings
+4. Deploy!
 
 ## 📱 Future Enhancements
 

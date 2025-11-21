@@ -7,7 +7,7 @@ import axios from 'axios';
 // Use environment-specific base URL
 const API_BASE_URL = import.meta.env.DEV 
   ? 'http://localhost:5000/api' 
-  : '/api'; // For production, proxy through Vercel
+  : 'https://equai-ai-backend.onrender.com/api'; // Point to Render backend in production
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -43,11 +43,11 @@ export const getGraphUrl = (filename) => {
   if (filename.startsWith('/api/graph/')) {
     return import.meta.env.DEV 
       ? `http://localhost:5000${filename}`
-      : `${filename}`;
+      : `https://equai-ai-backend.onrender.com${filename}`;
   }
   return import.meta.env.DEV
     ? `http://localhost:5000/api/graph/${filename}`
-    : `/api/graph/${filename}`;
+    : `https://equai-ai-backend.onrender.com/api/graph/${filename}`;
 };
 
 /**
@@ -91,7 +91,7 @@ export const getAnalytics = async () => {
 export const generateGraph = (expr, xmin = -10, xmax = 10) => {
   return import.meta.env.DEV
     ? `http://localhost:5000/api/graph?expr=${encodeURIComponent(expr)}&xmin=${xmin}&xmax=${xmax}`
-    : `/api/graph?expr=${encodeURIComponent(expr)}&xmin=${xmin}&xmax=${xmax}`;
+    : `https://equai-ai-backend.onrender.com/api/graph?expr=${encodeURIComponent(expr)}&xmin=${xmin}&xmax=${xmax}`;
 };
 
 export default api;

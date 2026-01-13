@@ -5,6 +5,7 @@ Main application file with all routes and endpoints
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import logging
+import os
 from config import Config
 from database import db
 # Import solver with fallback

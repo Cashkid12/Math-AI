@@ -15,14 +15,27 @@ class Database:
     def __init__(self):
         """Initialize database connection"""
         try:
-            self.client = MongoClient(Config.MONGODB_URI)
-            self.db = self.client[Config.DATABASE_NAME]
-            self.problems = self.db.problems
-            self.chats = self.db.chats  # New collection for chat history
-            logger.info("Successfully connected to MongoDB")
+            if Config.MONGODB_URI:  # Only connect if URI is provided
+                self.client = MongoClient(Config.MONGODB_URI)
+                self.db = self.client[Config.DATABASE_NAME]
+                self.problems = self.db.problems
+                self.chats = self.db.chats  # New collection for chat history
+                logger.info("Successfully connected to MongoDB")
+                self.connected = True
+            else:
+                logger.warning("MONGODB_URI not provided, running without database")
+                self.client = None
+                self.db = None
+                self.problems = None
+                self.chats = None
+                self.connected = False
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {e}")
-            raise
+            self.client = None
+            self.db = None
+            self.problems = None
+            self.chats = None
+            self.connected = False
     
     def save_chat_message(self, chat_id, role, content, metadata=None):
         """
@@ -37,6 +50,10 @@ class Database:
         Returns:
             Inserted document ID
         """
+        if not self.connected:
+            logger.warning("Database not connected, skipping save_chat_message")
+            return None
+        
         try:
             document = {
                 'chat_id': chat_id,
@@ -59,6 +76,10 @@ class Database:
         Returns:
             Unique chat ID
         """
+        if not self.connected:
+            logger.warning("Database not connected, skipping create_new_chat")
+            return str(uuid.uuid4())  # Return a chat ID but don't save to DB
+        
         try:
             chat_id = str(uuid.uuid4())
             document = {
@@ -84,6 +105,10 @@ class Database:
         Returns:
             List of chat messages
         """
+        if not self.connected:
+            logger.warning("Database not connected, returning empty chat history")
+            return []
+        
         try:
             messages = list(self.chats.find({
                 'chat_id': chat_id,
@@ -112,6 +137,10 @@ class Database:
         Returns:
             List of chat sessions
         """
+        if not self.connected:
+            logger.warning("Database not connected, returning empty chat list")
+            return []
+        
         try:
             # Find all documents that are chat sessions (not individual messages)
             chats = list(self.chats.find({
@@ -146,6 +175,10 @@ class Database:
         Returns:
             Inserted document ID
         """
+        if not self.connected:
+            logger.warning("Database not connected, skipping save_problem")
+            return None
+        
         try:
             document = {
                 'type': problem_type,
@@ -173,6 +206,10 @@ class Database:
         Returns:
             List of recent problems
         """
+        if not self.connected:
+            logger.warning("Database not connected, returning empty history")
+            return []
+        
         try:
             problems = list(self.problems.find()
                           .sort('timestamp', -1)
@@ -195,6 +232,10 @@ class Database:
         Returns:
             Dictionary with analytics data
         """
+        if not self.connected:
+            logger.warning("Database not connected, returning default analytics")
+            return {}
+        
         try:
             total = self.problems.count_documents({})
             algebra_count = self.problems.count_documents({'type': 'algebra'})

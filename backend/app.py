@@ -5,11 +5,119 @@ Main application file with all routes and endpoints
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import logging
-import os
 from config import Config
 from database import db
-from gemini_solver import hybrid_solver as solver
-from graph_generator import graph_gen
+# Import solver with fallback
+try:
+    from gemini_solver import hybrid_solver as solver
+    print("Successfully loaded Gemini-based solver")
+except ImportError as e:
+    print(f"Failed to load gemini_solver: {e}")
+    # Fallback to math_solver only
+    from math_solver import MathSolver
+    
+    class FallbackSolver:
+        def solve_any(self, input_text):
+            math_solver = MathSolver()
+            return math_solver.solve_any(input_text)
+    
+    solver = FallbackSolver()
+    print("Using fallback math-only solver")
+except Exception as e:
+    print(f"Unexpected error loading solver: {e}")
+    # Fallback to math_solver only
+    from math_solver import MathSolver
+    
+    class FallbackSolver:
+        def solve_any(self, input_text):
+            math_solver = MathSolver()
+            return math_solver.solve_any(input_text)
+    
+    solver = FallbackSolver()
+    print("Using fallback math-only solver")
+
+# Import graph generator with fallback
+try:
+    from graph_generator import graph_gen
+    print("Successfully loaded graph generator")
+except ImportError as e:
+    print(f"Failed to load graph_generator: {e}")
+    
+    class FallbackGraphGen:
+        def generate_graph(self, expression, xmin, xmax):
+            # Create a placeholder graph
+            import matplotlib.pyplot as plt
+            import numpy as np
+            import os
+            import uuid
+            
+            # Create a simple graph with just axes
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.plot([xmin, xmax], [0, 0], 'k-', linewidth=0.5)  # x-axis
+            ax.plot([0, 0], [xmin/2, xmax/2], 'k-', linewidth=0.5)  # y-axis
+            ax.grid(True, alpha=0.3)
+            ax.set_title(f"Graph of: {expression}")
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+            
+            # Create static directory if it doesn't exist
+            if not os.path.exists('static'):
+                os.makedirs('static')
+            if not os.path.exists('static/graphs'):
+                os.makedirs('static/graphs')
+            
+            # Generate unique filename
+            filename = f"graph_{uuid.uuid4().hex}.png"
+            filepath = os.path.join('static/graphs', filename)
+            
+            plt.savefig(filepath, dpi=100, bbox_inches='tight')
+            plt.close()
+            
+            return filepath
+        
+        def generate_multi_graph(self, expressions, xmin, xmax):
+            return self.generate_graph('multiple', xmin, xmax)
+    
+    graph_gen = FallbackGraphGen()
+    print("Using fallback graph generator")
+except Exception as e:
+    print(f"Unexpected error loading graph generator: {e}")
+    
+    class FallbackGraphGen:
+        def generate_graph(self, expression, xmin, xmax):
+            import matplotlib.pyplot as plt
+            import os
+            import uuid
+            
+            # Create a simple graph with just axes
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.text(0.5, 0.5, f"Graph not available:\n{expression}", 
+                   horizontalalignment='center', verticalalignment='center', 
+                   transform=ax.transAxes, fontsize=12)
+            ax.set_xlim(-1, 1)
+            ax.set_ylim(-1, 1)
+            ax.set_title(f"Graph of: {expression}")
+            
+            # Create static directory if it doesn't exist
+            if not os.path.exists('static'):
+                os.makedirs('static')
+            if not os.path.exists('static/graphs'):
+                os.makedirs('static/graphs')
+            
+            # Generate unique filename
+            filename = f"graph_{uuid.uuid4().hex}.png"
+            filepath = os.path.join('static/graphs', filename)
+            
+            plt.savefig(filepath, dpi=100, bbox_inches='tight')
+            plt.close()
+            
+            return filepath
+        
+        def generate_multi_graph(self, expressions, xmin, xmax):
+            return self.generate_graph('multiple', xmin, xmax)
+    
+    graph_gen = FallbackGraphGen()
+    print("Using fallback graph generator")
 
 # Configure logging
 logging.basicConfig(
@@ -80,7 +188,6 @@ def solve_problem():
         # Try to generate graph if it's a function
         if result.get('solution') and not result.get('error'):
             try:
-                from graph_generator import graph_gen
                 # Check if solution contains a function we can graph
                 expr_to_graph = result.get('solution', input_text)
                 if '=' not in str(expr_to_graph):  # Not an equation, might be graphable
@@ -296,7 +403,6 @@ def chat_with_equai():
         graph_url = None
         if result.get('source') == 'math_solver' and result.get('problem_type', '').lower() != 'general question':
             try:
-                from graph_generator import graph_gen
                 expr_to_graph = result.get('solution', user_message)
                 # Only try to graph simple expressions that don't contain alphabetic variables
                 expr_str = str(expr_to_graph)

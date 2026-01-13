@@ -5,6 +5,7 @@ from pymongo import MongoClient
 from datetime import datetime
 from config import Config
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +18,120 @@ class Database:
             self.client = MongoClient(Config.MONGODB_URI)
             self.db = self.client[Config.DATABASE_NAME]
             self.problems = self.db.problems
+            self.chats = self.db.chats  # New collection for chat history
             logger.info("Successfully connected to MongoDB")
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {e}")
             raise
     
-    def save_problem(self, problem_type, input_text, solution, steps, graph_url=None):
+    def save_chat_message(self, chat_id, role, content, metadata=None):
+        """
+        Save a chat message to database
+        
+        Args:
+            chat_id: Unique identifier for the chat conversation
+            role: 'user' or 'assistant'
+            content: Message content
+            metadata: Optional metadata about the message
+            
+        Returns:
+            Inserted document ID
+        """
+        try:
+            document = {
+                'chat_id': chat_id,
+                'role': role,
+                'content': content,
+                'metadata': metadata or {},
+                'timestamp': datetime.utcnow()
+            }
+            result = self.chats.insert_one(document)
+            logger.info(f"Saved chat message with ID: {result.inserted_id}")
+            return str(result.inserted_id)
+        except Exception as e:
+            logger.error(f"Error saving chat message: {e}")
+            return None
+    
+    def create_new_chat(self):
+        """
+        Create a new chat session
+        
+        Returns:
+            Unique chat ID
+        """
+        try:
+            chat_id = str(uuid.uuid4())
+            document = {
+                'chat_id': chat_id,
+                'created_at': datetime.utcnow(),
+                'last_updated': datetime.utcnow()
+            }
+            result = self.chats.insert_one(document)
+            logger.info(f"Created new chat session with ID: {chat_id}")
+            return chat_id
+        except Exception as e:
+            logger.error(f"Error creating new chat: {e}")
+            return None
+    
+    def get_chat_history(self, chat_id, limit=50):
+        """
+        Get chat history for a specific conversation
+        
+        Args:
+            chat_id: Unique identifier for the chat conversation
+            limit: Maximum number of messages to return
+            
+        Returns:
+            List of chat messages
+        """
+        try:
+            messages = list(self.chats.find({
+                'chat_id': chat_id,
+                'role': {'$in': ['user', 'assistant']}  # Filter out session documents
+            })
+                          .sort('timestamp', 1)
+                          .limit(limit))
+            
+            # Convert ObjectId to string for JSON serialization
+            for message in messages:
+                message['_id'] = str(message['_id'])
+                message['timestamp'] = message['timestamp'].isoformat()
+            
+            return messages
+        except Exception as e:
+            logger.error(f"Error retrieving chat history: {e}")
+            return []
+    
+    def get_all_chats(self, limit=20):
+        """
+        Get all chat sessions for a user
+        
+        Args:
+            limit: Maximum number of chat sessions to return
+            
+        Returns:
+            List of chat sessions
+        """
+        try:
+            # Find all documents that are chat sessions (not individual messages)
+            chats = list(self.chats.find({
+                'role': {'$exists': False}  # Chat session documents don't have role field
+            })
+                          .sort('created_at', -1)
+                          .limit(limit))
+            
+            # Convert ObjectId to string for JSON serialization
+            for chat in chats:
+                chat['_id'] = str(chat['_id'])
+                chat['created_at'] = chat['created_at'].isoformat()
+                chat['last_updated'] = chat['last_updated'].isoformat()
+            
+            return chats
+        except Exception as e:
+            logger.error(f"Error retrieving chat sessions: {e}")
+            return []
+    
+    def save_problem(self, problem_type, input_text, solution, steps, graph_url=None, chat_id=None):
         """
         Save a solved problem to database
         
@@ -32,6 +141,7 @@ class Database:
             solution: Computed solution
             steps: List of solution steps
             graph_url: Optional URL to graph image
+            chat_id: Optional chat session ID this problem belongs to
             
         Returns:
             Inserted document ID
@@ -43,6 +153,7 @@ class Database:
                 'solution': solution,
                 'steps': steps,
                 'graph_url': graph_url,
+                'chat_id': chat_id,  # Link to chat session if provided
                 'timestamp': datetime.utcnow()
             }
             result = self.problems.insert_one(document)

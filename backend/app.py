@@ -8,7 +8,7 @@ import logging
 import os
 from config import Config
 from database import db
-from math_solver import solver
+from gemini_solver import hybrid_solver as solver
 from graph_generator import graph_gen
 
 # Configure logging
@@ -80,13 +80,15 @@ def solve_problem():
         # Try to generate graph if it's a function
         if result.get('solution') and not result.get('error'):
             try:
+                from graph_generator import graph_gen
                 # Check if solution contains a function we can graph
                 expr_to_graph = result.get('solution', input_text)
-                if '=' not in expr_to_graph:  # Not an equation, might be graphable
-                    graph_path = graph_gen.generate_graph(expr_to_graph, -10, 10)
+                if '=' not in str(expr_to_graph):  # Not an equation, might be graphable
+                    graph_path = graph_gen.generate_graph(str(expr_to_graph), -10, 10)
                     graph_filename = os.path.basename(graph_path)
                     result['graph_url'] = f"/api/graph/{graph_filename}"
-            except:
+            except Exception as e:
+                logger.error(f"Error generating graph: {e}")
                 pass  # No graph needed
         
         # Save to database
@@ -163,6 +165,183 @@ def generate_graph_url():
     except Exception as e:
         logger.error(f"Error generating graph: {e}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/chat/new', methods=['POST'])
+def create_chat():
+    """
+    Create a new chat session
+    
+    Returns:
+        JSON with new chat ID
+    """
+    try:
+        chat_id = db.create_new_chat()
+        if chat_id:
+            return jsonify({
+                'chat_id': chat_id,
+                'status': 'success'
+            }), 200
+        else:
+            return jsonify({'error': 'Failed to create chat session'}), 500
+    except Exception as e:
+        logger.error(f"Error creating chat: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/chat/<chat_id>/messages', methods=['GET'])
+def get_chat_messages(chat_id):
+    """
+    Get messages for a specific chat
+    
+    Args:
+        chat_id: Unique chat identifier
+        
+    Returns:
+        JSON list of messages
+    """
+    try:
+        messages = db.get_chat_history(chat_id)
+        return jsonify({
+            'chat_id': chat_id,
+            'messages': messages,
+            'count': len(messages)
+        }), 200
+    except Exception as e:
+        logger.error(f"Error retrieving chat messages: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/chats', methods=['GET'])
+def get_chats():
+    """
+    Get all chat sessions
+    
+    Query parameters:
+        limit: Maximum number of results (default: 20)
+        
+    Returns:
+        JSON list of chat sessions
+    """
+    try:
+        limit = int(request.args.get('limit', 20))
+        chats = db.get_all_chats(limit)
+        
+        return jsonify({
+            'chats': chats,
+            'count': len(chats)
+        }), 200
+    except Exception as e:
+        logger.error(f"Error retrieving chats: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/chat', methods=['POST'])
+def chat_with_equai():
+    """
+    Chat with EquaAI - handles both math and general questions
+    
+    Expected JSON input:
+    {
+        "message": "user message",
+        "chat_id": "optional chat session ID (creates new if not provided)"
+    }
+    
+    Returns:
+    {
+        "response": "AI response",
+        "chat_id": "chat session ID",
+        "source": "math_solver or gemini_ai",
+        "graph_url": "optional graph URL for math problems"
+    }
+    """
+    try:
+        data = request.json
+        
+        if not data or 'message' not in data:
+            return jsonify({
+                'error': 'Missing required field: message'
+            }), 400
+        
+        user_message = data['message'].strip()
+        chat_id = data.get('chat_id')
+        
+        if not user_message:
+            return jsonify({
+                'error': 'Message cannot be empty'
+            }), 400
+        
+        # Create new chat if no chat_id provided
+        if not chat_id:
+            chat_id = db.create_new_chat()
+            if not chat_id:
+                return jsonify({'error': 'Failed to create chat session'}), 500
+        
+        # Save user message
+        db.save_chat_message(chat_id, 'user', user_message)
+        
+        logger.info(f"Chat with EquaAI: {user_message}")
+        
+        # Let the hybrid solver handle the message
+        result = solver.solve_any(user_message)
+        
+        ai_response = result.get('solution', 'I couldn\'t process your request')
+        
+        # Save AI response
+        db.save_chat_message(chat_id, 'assistant', ai_response, {
+            'source': result.get('source', 'unknown'),
+            'problem_type': result.get('problem_type')
+        })
+        
+        # Try to generate graph if it's a math problem
+        graph_url = None
+        if result.get('source') == 'math_solver' and result.get('problem_type', '').lower() != 'general question':
+            try:
+                from graph_generator import graph_gen
+                expr_to_graph = result.get('solution', user_message)
+                # Only try to graph simple expressions that don't contain alphabetic variables
+                expr_str = str(expr_to_graph)
+                if '=' not in expr_str and all(not c.isalpha() or c in ['x', 'y', 'z'] for c in expr_str):
+                    # Simple expression, try to graph it
+                    graph_path = graph_gen.generate_graph(expr_str, -10, 10)
+                    graph_filename = os.path.basename(graph_path)
+                    graph_url = f"/api/graph/{graph_filename}"
+            except Exception as e:
+                logger.error(f"Error generating graph: {e}")
+                pass  # No graph needed
+        
+        # Save to database as a problem if it's a math question
+        if result.get('source') == 'math_solver':
+            try:
+                db.save_problem(
+                    problem_type=result.get('problem_type', 'math'),
+                    input_text=user_message,
+                    solution=str(result.get('solution', '')),
+                    steps=result.get('steps', []),
+                    graph_url=graph_url,
+                    chat_id=chat_id
+                )
+            except Exception as e:
+                logger.error(f"Error saving to database: {e}")
+        
+        response_data = {
+            'response': ai_response,
+            'chat_id': chat_id,
+            'source': result.get('source', 'unknown'),
+            'problem_type': result.get('problem_type')
+        }
+        
+        if graph_url:
+            response_data['graph_url'] = graph_url
+        
+        return jsonify(response_data), 200
+        
+    except ValueError as e:
+        logger.error(f"ValueError in chat: {e}")
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        logger.error(f"Error in chat endpoint: {e}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
 
 @app.route('/api/history', methods=['GET'])
 def get_history():

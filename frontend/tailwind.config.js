@@ -7,17 +7,22 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#1A73E8',
-        accent: '#00C896',
+        primary: '#000000',
+        accent: '#000000',
         dark: {
-          bg: '#0E1117',
-          card: '#1A1F2E',
-          border: '#2E3440',
+          bg: '#ffffff',
+          card: '#ffffff',
+          border: '#000000',
         },
         light: {
-          bg: '#F9FAFB',
-          card: '#FFFFFF',
-          border: '#E5E7EB',
+          bg: '#ffffff',
+          card: '#ffffff',
+          border: '#000000',
+        },
+        text: {
+          primary: '#000000',
+          secondary: '#666666',
+          muted: '#999999',
         }
       },
       fontFamily: {

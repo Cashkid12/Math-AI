@@ -67,7 +67,7 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-dark-bg">
+    <div className="flex flex-col h-screen bg-white">
       <Header />
       
       {/* Chat Container */}
@@ -76,43 +76,43 @@ function App() {
         <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center mb-6">
-                <span className="text-4xl">🧠</span>
+              <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mb-6">
+                <span className="text-4xl text-white">∑</span>
               </div>
-              <h2 className="text-3xl font-montserrat font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <h2 className="text-3xl font-montserrat font-bold mb-4 text-black">
                 Equai AI Math Solver
               </h2>
-              <p className="text-gray-400 max-w-md mb-8">
+              <p className="text-gray-600 max-w-md mb-8">
                 Ask me any math problem! I'll solve it and explain every step.
               </p>
               <div className="grid grid-cols-2 gap-3 max-w-lg">
                 <button
                   onClick={() => setInput('What is 25% of 80?')}
-                  className="p-4 bg-dark-card border border-dark-border rounded-lg hover:border-accent transition-all text-left"
+                  className="p-4 bg-white border border-black rounded-lg hover:bg-gray-100 transition-all text-left"
                 >
-                  <p className="text-sm text-gray-400 mb-1">💰 Percentage</p>
-                  <p className="text-white text-sm">What is 25% of 80?</p>
+                  <p className="text-sm text-gray-600 mb-1">Percentage</p>
+                  <p className="text-black text-sm">What is 25% of 80?</p>
                 </button>
                 <button
                   onClick={() => setInput('x^2 - 5x + 6 = 0')}
-                  className="p-4 bg-dark-card border border-dark-border rounded-lg hover:border-accent transition-all text-left"
+                  className="p-4 bg-white border border-black rounded-lg hover:bg-gray-100 transition-all text-left"
                 >
-                  <p className="text-sm text-gray-400 mb-1">📐 Algebra</p>
-                  <p className="text-white text-sm">x² - 5x + 6 = 0</p>
+                  <p className="text-sm text-gray-600 mb-1">Algebra</p>
+                  <p className="text-black text-sm">x² - 5x + 6 = 0</p>
                 </button>
                 <button
                   onClick={() => setInput('sin(45)')}
-                  className="p-4 bg-dark-card border border-dark-border rounded-lg hover:border-accent transition-all text-left"
+                  className="p-4 bg-white border border-black rounded-lg hover:bg-gray-100 transition-all text-left"
                 >
-                  <p className="text-sm text-gray-400 mb-1">📊 Trigonometry</p>
-                  <p className="text-white text-sm">sin(45)</p>
+                  <p className="text-sm text-gray-600 mb-1">Trigonometry</p>
+                  <p className="text-black text-sm">sin(45)</p>
                 </button>
                 <button
                   onClick={() => setInput('sqrt(144)')}
-                  className="p-4 bg-dark-card border border-dark-border rounded-lg hover:border-accent transition-all text-left"
+                  className="p-4 bg-white border border-black rounded-lg hover:bg-gray-100 transition-all text-left"
                 >
-                  <p className="text-sm text-gray-400 mb-1">🔢 Roots</p>
-                  <p className="text-white text-sm">√144</p>
+                  <p className="text-sm text-gray-600 mb-1">Roots</p>
+                  <p className="text-black text-sm">√144</p>
                 </button>
               </div>
             </div>
@@ -124,14 +124,14 @@ function App() {
           
           {loading && (
             <div className="flex items-start space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-sm">🧠</span>
+              <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-sm text-white">∑</span>
               </div>
-              <div className="flex-1 bg-dark-card border border-dark-border rounded-2xl p-4">
+              <div className="flex-1 bg-white border border-black rounded-2xl p-4">
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
-                  <div className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
-                  <div className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                  <div className="w-2 h-2 bg-black rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
+                  <div className="w-2 h-2 bg-black rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                  <div className="w-2 h-2 bg-black rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
                 </div>
               </div>
             </div>
@@ -139,14 +139,14 @@ function App() {
         </div>
 
         {/* Input Area (Fixed at bottom like ChatGPT) */}
-        <div className="border-t border-dark-border p-4 bg-dark-bg">
+        <div className="border-t border-black p-4 bg-white">
           <div className="flex items-end space-x-3">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask me any math problem..."
-              className="flex-1 bg-dark-card border border-dark-border rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent resize-none max-h-32"
+              className="flex-1 bg-white border border-black rounded-xl px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black resize-none max-h-32"
               rows="1"
               style={{
                 minHeight: '48px',
@@ -158,16 +158,16 @@ function App() {
               disabled={loading || !input.trim()}
               className={`p-3 rounded-xl transition-all ${
                 loading || !input.trim()
-                  ? 'bg-gray-600 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-accent/50'
+                  ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                  : 'bg-black text-white hover:bg-gray-800'
               }`}
             >
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
               </svg>
             </button>
           </div>
-          <p className="text-xs text-gray-500 mt-2 text-center">
+          <p className="text-xs text-gray-600 mt-2 text-center">
             Press Enter to send • Shift+Enter for new line
           </p>
         </div>

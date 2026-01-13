@@ -259,4 +259,19 @@ class Database:
             logger.info("Database connection closed")
 
 # Global database instance
-db = Database()
+# Create a lazy-loading proxy to avoid startup errors when MongoDB is not configured
+class DatabaseProxy:
+    def __init__(self):
+        self._instance = None
+    
+    def _get_instance(self):
+        if self._instance is None:
+            self._instance = Database()
+        return self._instance
+    
+    def __getattr__(self, name):
+        # Delegate all attribute access to the actual database instance
+        return getattr(self._get_instance(), name)
+
+# Create proxy instance
+db = DatabaseProxy()
